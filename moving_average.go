@@ -1,7 +1,7 @@
 package fpd
 
 type MovingAverage struct {
-	samples  []*Decimal
+	samples  []Decimal
 	scale    int
 	capacity int
 }
@@ -13,7 +13,7 @@ func NewMovingAverage(capacity int, scale int) *MovingAverage {
 	}
 }
 
-func (ma *MovingAverage) Append(sample *Decimal) {
+func (ma *MovingAverage) Append(sample Decimal) {
 	if len(ma.samples) == ma.capacity {
 		ma.samples = append(ma.samples[1:], sample)
 	} else {
@@ -21,7 +21,7 @@ func (ma *MovingAverage) Append(sample *Decimal) {
 	}
 }
 
-func (ma *MovingAverage) Calculate() *Decimal {
+func (ma *MovingAverage) Calculate() Decimal {
 	sum := New(0, ma.scale)
 	for _, sample := range ma.samples {
 		sum = sum.Add(sample)
