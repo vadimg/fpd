@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+var Precision = 16 // precision during division when it doesn't divide exactly
+
 // Decimal represents a fixed-point decimal.
 type Decimal struct {
 	value *big.Int
@@ -28,9 +30,11 @@ func NewFromString(value string) (Decimal, error) {
 		// an int
 		intString = value
 		scale = 0
-	} else {
+	} else if len(parts) == 2 {
 		intString = parts[0] + parts[1]
 		scale = -len(parts[1])
+	} else {
+		return Decimal{}, fmt.Errorf("can't convert %s to decimal", value)
 	}
 
 	dValue := big.NewInt(0)
@@ -145,15 +149,46 @@ func (d Decimal) Mul(d2 Decimal) Decimal {
 
 // Mul divides d by d2 and returns d3
 func (d Decimal) Div(d2 Decimal) Decimal {
-	baseScale := -int(math.Pow(float64(smallestOf(d.scale, d2.scale)), 2))
+	d.ensureInitialized()
+	d2.ensureInitialized()
 
-	rd := d.rescale(baseScale + d.scale)
-	rd2 := d2.rescale(baseScale)
+	negative := (d.value.Sign() > 0) != (d2.value.Sign() > 0)
+	ad := d.Abs()
+	ad2 := d2.Abs()
 
-	d3Value := big.NewInt(0).Div(rd.value, rd2.value)
+	shift := bigIntLen(ad2.value) - bigIntLen(ad.value) + Precision + 1
 
-	d3 := Decimal{d3Value, d.scale}
-	return d3.rescale(d.scale)
+	scale := ad.scale - ad2.scale - shift
+
+	coeff := big.NewInt(0)
+	rem := big.NewInt(0)
+	if shift >= 0 {
+		shiftMult := big.NewInt(0).Exp(big.NewInt(10),
+			big.NewInt(int64(shift)),
+			nil)
+		num := big.NewInt(0).Mul(ad.value, shiftMult)
+		coeff, rem = coeff.DivMod(num, ad2.value, rem)
+	} else {
+		coeff, rem = coeff.DivMod(ad.value, ad2.value, rem)
+		scale += shift
+	}
+
+	if rem.Cmp(big.NewInt(0)) == 0 {
+		// result is exact, get as close to ideal exponent as possible
+		ideal := ad.scale - ad2.scale
+		modRes := big.NewInt(0)
+		for scale < ideal &&
+			modRes.Mod(coeff, big.NewInt(10)).Cmp(big.NewInt(0)) == 0 {
+			coeff.Div(coeff, big.NewInt(10))
+			scale += 1
+		}
+	}
+
+	if negative {
+		coeff.Neg(coeff)
+	}
+
+	return Decimal{coeff, scale}
 }
 
 // Cmp compares x and y and returns -1, 0 or 1
@@ -223,4 +258,13 @@ func smallestOf(x, y int) int {
 		return y
 	}
 	return x
+}
+
+func bigIntLen(value *big.Int) int {
+	// TODO: optimize
+	ret := len(value.String())
+	if value.Sign() < 0 {
+		ret -= 1 // don't count - sign
+	}
+	return ret
 }
