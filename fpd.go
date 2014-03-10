@@ -71,12 +71,6 @@ func NewFromFloatWithScale(value float64, scale int) Decimal {
 	return Decimal{dValue, scale}
 }
 
-func (d *Decimal) ensureInitialized() {
-	if d.value == nil {
-		d.value = big.NewInt(0)
-	}
-}
-
 // Rescale returns a rescaled version of the decimal. Returned
 // decimal may be less precise if the given scale is bigger
 // than the initial scale of the Decimal
@@ -247,6 +241,12 @@ func (d Decimal) String() string {
 	}
 
 	return fmt.Sprintf("%v.%v", a, b)
+}
+
+func (d *Decimal) ensureInitialized() {
+	if d.value == nil {
+		d.value = big.NewInt(0)
+	}
 }
 
 func (d Decimal) unformattedString() string {
