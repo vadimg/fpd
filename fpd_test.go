@@ -77,6 +77,9 @@ func TestNewFromStringErrs(t *testing.T) {
 		"..",
 		"2..",
 		"..2",
+		".5.2",
+		"8..2",
+		"8.1.",
 	}
 
 	for _, s := range tests {
