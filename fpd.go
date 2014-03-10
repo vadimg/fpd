@@ -10,6 +10,10 @@ import (
 
 var Precision = 16 // precision during division when it doesn't divide exactly
 
+// to make computations faster
+var ten = big.NewInt(10)
+var zero = big.NewInt(0)
+
 // Decimal represents a fixed-point decimal.
 type Decimal struct {
 	value *big.Int
@@ -96,7 +100,6 @@ func (d Decimal) rescale(scale int) Decimal {
 	d.ensureInitialized()
 	diff := int(math.Abs(float64(scale - d.scale)))
 	value := big.NewInt(0).Set(d.value)
-	ten := big.NewInt(10)
 
 	for diff > 0 {
 		if scale > d.scale {
@@ -163,9 +166,7 @@ func (d Decimal) Div(d2 Decimal) Decimal {
 	coeff := big.NewInt(0)
 	rem := big.NewInt(0)
 	if shift >= 0 {
-		shiftMult := big.NewInt(0).Exp(big.NewInt(10),
-			big.NewInt(int64(shift)),
-			nil)
+		shiftMult := big.NewInt(0).Exp(ten, big.NewInt(int64(shift)), nil)
 		num := big.NewInt(0).Mul(ad.value, shiftMult)
 		coeff, rem = coeff.DivMod(num, ad2.value, rem)
 	} else {
@@ -177,9 +178,8 @@ func (d Decimal) Div(d2 Decimal) Decimal {
 		// result is exact, get as close to ideal exponent as possible
 		ideal := ad.scale - ad2.scale
 		modRes := big.NewInt(0)
-		for scale < ideal &&
-			modRes.Mod(coeff, big.NewInt(10)).Cmp(big.NewInt(0)) == 0 {
-			coeff.Div(coeff, big.NewInt(10))
+		for scale < ideal && modRes.Mod(coeff, ten).Cmp(zero) == 0 {
+			coeff.Div(coeff, ten)
 			scale += 1
 		}
 	}
