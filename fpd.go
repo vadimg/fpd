@@ -115,9 +115,13 @@ func (d Decimal) Abs() Decimal {
 
 // Add adds d to d2 and return d3
 func (d Decimal) Add(d2 Decimal) Decimal {
+	baseScale := smallestOf(d.scale, d2.scale)
+	rd := d.rescale(baseScale)
+	rd2 := d2.rescale(baseScale)
+
 	d.ensureInitialized()
-	d3Value := big.NewInt(0).Add(d.value, d2.rescale(d.scale).value)
-	return Decimal{d3Value, d.scale}
+	d3Value := big.NewInt(0).Add(rd.value, rd2.value)
+	return Decimal{d3Value, baseScale}
 }
 
 // Sub subtracts d2 from d and returns d3
@@ -127,19 +131,16 @@ func (d Decimal) Sub(d2 Decimal) Decimal {
 	rd2 := d2.rescale(baseScale)
 
 	d3Value := big.NewInt(0).Sub(rd.value, rd2.value)
-	d3 := Decimal{d3Value, baseScale}
-	return d3.rescale(d.scale)
+	return Decimal{d3Value, baseScale}
 }
 
 // Mul multiplies d with d2 and returns d3
 func (d Decimal) Mul(d2 Decimal) Decimal {
-	baseScale := smallestOf(d.scale, d2.scale)
-	rd := d.rescale(baseScale)
-	rd2 := d2.rescale(baseScale)
+	d.ensureInitialized()
+	d2.ensureInitialized()
 
-	d3Value := big.NewInt(0).Mul(rd.value, rd2.value)
-	d3 := Decimal{d3Value, 2 * baseScale}
-	return d3.rescale(d.scale)
+	d3Value := big.NewInt(0).Mul(d.value, d2.value)
+	return Decimal{d3Value, d.scale + d2.scale}
 }
 
 // Mul divides d by d2 and returns d3

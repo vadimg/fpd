@@ -176,6 +176,108 @@ func TestDecimal_Uninitialized(t *testing.T) {
 	}
 }
 
+func TestDecimal_Add(t *testing.T) {
+	type Inp struct {
+		a string
+		b string
+	}
+
+	adds := map[Inp]string {
+		Inp{"2", "3"}: "5",
+		Inp{"2454495034", "3451204593"}: "5905699627",
+		Inp{"24544.95034", ".3451204593"}: "24545.2954604593",
+		Inp{".1", ".1"}: "0.2",
+		Inp{".1", "-.1"}: "0.0", // TODO: should this just be "0"?
+		Inp{"0", "1.001"}: "1.001",
+	}
+
+	for inp, res := range adds {
+		a, err := NewFromString(inp.a)
+		if err != nil {
+			t.FailNow()
+		}
+		b, err := NewFromString(inp.b)
+		if err != nil {
+			t.FailNow()
+		}
+		c := a.Add(b)
+		if c.String() != res {
+			t.Errorf("expected %s, got %s", res, c.String())
+		}
+	}
+}
+
+func TestDecimal_Sub(t *testing.T) {
+	type Inp struct {
+		a string
+		b string
+	}
+
+	adds := map[Inp]string {
+		Inp{"2", "3"}: "-1",
+		Inp{"12", "3"}: "9",
+		Inp{"-2", "9"}: "-11",
+		Inp{"2454495034", "3451204593"}: "-996709559",
+		Inp{"24544.95034", ".3451204593"}: "24544.6052195407",
+		Inp{".1", "-.1"}: "0.2",
+		Inp{".1", ".1"}: "0.0", // TODO: should this just be "0"?
+		Inp{"0", "1.001"}: "-1.001",
+		Inp{"1.001", "0"}: "1.001",
+		Inp{"2.3", ".3"}: "2.0",
+	}
+
+	for inp, res := range adds {
+		a, err := NewFromString(inp.a)
+		if err != nil {
+			t.FailNow()
+		}
+		b, err := NewFromString(inp.b)
+		if err != nil {
+			t.FailNow()
+		}
+		c := a.Sub(b)
+		if c.String() != res {
+			t.Errorf("expected %s, got %s", res, c.String())
+		}
+	}
+}
+
+func TestDecimal_Mul(t *testing.T) {
+	type Inp struct {
+		a string
+		b string
+	}
+
+	mults := map[Inp]string {
+		Inp{"2", "3"}: "6",
+		Inp{"2454495034", "3451204593"}: "8470964534836491162",
+		Inp{"24544.95034", ".3451204593"}: "8470.964534836491162",
+		Inp{".1", ".1"}: "0.01",
+		Inp{"0", "1.001"}: "0.000", // TODO: should this just be "0"?
+	}
+
+	for inp, res := range mults {
+		a, err := NewFromString(inp.a)
+		if err != nil {
+			t.FailNow()
+		}
+		b, err := NewFromString(inp.b)
+		if err != nil {
+			t.FailNow()
+		}
+		c := a.Mul(b)
+		if c.String() != res {
+			t.Errorf("expected %s, got %s", res, c.String())
+		}
+	}
+
+	// positive scale
+	c := New(1234,5).Mul(New(45,-1))
+	if c.String() != "555300000" {
+		t.Errorf("Expected %s, got %s", "555300000", c.String())
+	}
+}
+
 // old tests after this line
 
 func TestDecimal_Scale(t *testing.T) {
@@ -202,56 +304,6 @@ func TestDecimal_Abs2(t *testing.T) {
 	c := b.Abs()
 	if c.Cmp(a) == 0 {
 		t.Errorf("error")
-	}
-}
-
-func TestDecimal_Add1(t *testing.T) {
-	a := New(1234, -4)
-	b := New(9876, 3)
-
-	c := a.Add(b)
-	if c.unformattedString() != "98760001234" {
-		t.Errorf("error")
-	}
-}
-
-func TestDecimal_Add2(t *testing.T) {
-	a := New(1234, 3)
-	b := New(9876, -4)
-
-	c := a.Add(b)
-	if c.unformattedString() != "1234" {
-		t.Errorf("error")
-	}
-}
-
-func TestDecimal_Sub1(t *testing.T) {
-	a := New(1234, -4)
-	b := New(9876, 3)
-
-	c := a.Sub(b)
-	if c.unformattedString() != "-98759998766" {
-		t.Errorf(c.unformattedString())
-	}
-}
-
-func TestDecimal_Sub2(t *testing.T) {
-	a := New(1234, 3)
-	b := New(9876, -4)
-
-	c := a.Sub(b)
-	if c.unformattedString() != "1233" {
-		t.Errorf(c.unformattedString())
-	}
-}
-
-func TestDecimal_Mul1(t *testing.T) {
-	a := New(1398699, -4)
-	b := New(6, -3)
-
-	c := a.Mul(b)
-	if c.unformattedString() != "8392" {
-		t.Errorf(c.unformattedString())
 	}
 }
 
