@@ -146,6 +146,7 @@ func (d Decimal) Mul(d2 Decimal) Decimal {
 
 // Mul divides d by d2 and returns d3
 func (d Decimal) Div(d2 Decimal) Decimal {
+	// TODO: round
 	d.ensureInitialized()
 	d2.ensureInitialized()
 
